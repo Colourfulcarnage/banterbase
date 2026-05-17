@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>BanterBase · Random Generator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0c0f;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+    }
+
+    .container {
+      max-width: 780px;
+      width: 100%;
+      background: #111417;
+      border-radius: 2rem;
+      padding: 2rem 1.8rem 2.2rem 1.8rem;
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.7);
+      transition: all 0.2s ease;
+    }
+
+    /* headings + orange accents */
+    h1 {
+      color: #f97316;  /* vivid orange */
+      font-size: 1.9rem;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      margin-bottom: 0.3rem;
+    }
+
+    .sub {
+      color: #a1a5b0;
+      border-left: 3px solid #f97316;
+      padding-left: 0.8rem;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+
+    /* button grid — large tappable buttons */
+    .button-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2.2rem;
+    }
+
+    .cat-btn {
+      background: #1e2329;
+      border: none;
+      padding: 1rem 1.8rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border-radius: 60px;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      flex: 0 1 auto;
+      min-width: 130px;
+      letter-spacing: 0.3px;
+    }
+
+    .cat-btn:hover {
+      background: #2c343d;
+      transform: scale(0.97);
+    }
+
+    .cat-btn:active {
+      background: #f97316;
+      color: #0a0c0f;
+    }
+
+    /* joke card area */
+    .joke-card {
+      background: #0e1217;
+      border-radius: 1.8rem;
+      padding: 1.8rem;
+      margin-bottom: 2rem;
+      border: 1px solid #2a2f38;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+    }
+
+    .joke-text {
+      color: #f0f3f8;
+      font-size: 1.3rem;
+      line-height: 1.5;
+      font-weight: 450;
+      word-break: break-word;
+      white-space: pre-wrap;
+      max-height: 350px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+      scrollbar-width: thin;
+    }
+
+    /* custom scrollbar for longer jokes */
+    .joke-text::-webkit-scrollbar {
+      width: 5px;
+    }
+    .joke-text::-webkit-scrollbar-track {
+      background: #1e2329;
+      border-radius: 10px;
+    }
+    .joke-text::-webkit-scrollbar-thumb {
+      background: #f97316;
+      border-radius: 10px;
+    }
+
+    /* back button */
+    .back-btn {
+      background: none;
+      border: 1.5px solid #f97316;
+      color: #f97316;
+      padding: 0.7rem 1.6rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: 0.2s;
+      width: fit-content;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .back-btn:hover {
+      background: #f97316;
+      color: #0a0c0f;
+      border-color: #f97316;
+    }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 1.8rem;
+      font-size: 0.7rem;
+      color: #5b5f6b;
+    }
+
+    /* responsive: tablets & phones */
+    @media (max-width: 580px) {
+      .container {
+        padding: 1.5rem;
+      }
+      .cat-btn {
+        padding: 0.8rem 1.2rem;
+        font-size: 1rem;
+        min-width: 110px;
+      }
+      .joke-text {
+        font-size: 1.1rem;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+    }
+
+    @media (max-width: 450px) {
+      .button-grid {
+        gap: 0.7rem;
+      }
+      .cat-btn {
+        flex: 1 0 40%;
+        text-align: center;
+      }
+    }
+
+    /* loading / error style */
+    .error-msg {
+      color: #ff9f6e;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ BanterBase</h1>
+  <div class="sub">pick your poison · infinite randomness</div>
+
+  <!-- dynamic category buttons will be injected -->
+  <div id="buttonPanel" class="button-grid"></div>
+
+  <!-- joke display area -->
+  <div id="jokeDisplay" class="joke-card" style="display: none;">
+    <div id="jokeText" class="joke-text"></div>
+  </div>
+
+  <!-- back button (hidden initially) -->
+  <div id="backButtonWrapper" style="text-align: center; display: none;">
+    <button id="backBtn" class="back-btn">← BACK TO MENU</button>
+  </div>
+  <div class="footer-note">⬤ new joke each click | same joke may repeat</div>
+</div>
+
+<script>
+  // ---------- CONFIGURATION ----------
+  // map display name → file path
+  const categories = [
+    { name: "Dark Jokes", file: "data/dark.json" },
+    { name: "Dad Jokes",  file: "data/dad.json" },
+    { name: "Pick-up Lines", file: "data/pickup.json" },
+    { name: "Long Jokes", file: "data/long.json" }
+  ];
+
+  // in-memory cache to avoid reloading same file multiple times
+  const jokeCache = {};
+
+  // UI state
+  let activeCategory = null;      // current category object
+  let currentJokesList = [];      // array of jokes for active category
+
+  // ---------- helper: fetch jokes from json file ----------
+  async function fetchJokes(categoryObj) {
+    const url = categoryObj.file;
+    // if already cached, return cached array
+    if (jokeCache[url]) {
+      return jokeCache[url];
+    }
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new Error("JSON is not an array");
+      jokeCache[url] = data;
+      return data;
+    } catch (err) {
+      console.error(`Failed to load ${categoryObj.name}:`, err);
+      return [`⚠️ Could not load ${categoryObj.name}. Check file path or JSON syntax.`];
+    }
+  }
+
+  // ---------- random generator ----------
+  function getRandomJoke(jokesArray) {
+    if (!jokesArray || jokesArray.length === 0) return "❌ No jokes found in this category (yet).";
+    const randomIndex = Math.floor(Math.random() * jokesArray.length);
+    return jokesArray[randomIndex];
+  }
+
+  // ---------- UI: show joke ----------
+  async function onCategoryClick(categoryObj) {
+    // fetch jokes for this category (cache-friendly)
+    const jokes = await fetchJokes(categoryObj);
+    currentJokesList = jokes;
+    activeCategory = categoryObj;
+
+    const randomJoke = getRandomJoke(jokes);
+    
+    // update joke display
+    const jokeDisplayDiv = document.getElementById("jokeDisplay");
+    const jokeTextSpan = document.getElementById("jokeText");
+    jokeTextSpan.innerText = randomJoke;
+    jokeDisplayDiv.style.display = "flex";
+    
+    // show back button, hide category buttons
+    document.getElementById("buttonPanel").style.display = "none";
+    document.getElementById("backButtonWrapper").style.display = "block";
+  }
+
+  // ---------- reset to menu (clear joke & show buttons) ----------
+  function resetToMenu() {
+    // hide joke card & back button
+    document.getElementById("jokeDisplay").style.display = "none";
+    document.getElementById("backButtonWrapper").style.display = "none";
+    // show category buttons again
+    document.getElementById("buttonPanel").style.display = "flex";
+    // clear joke text (optional)
+    document.getElementById("jokeText").innerText = "";
+    activeCategory = null;
+    currentJokesList = [];
+  }
+
+  // ---------- build category buttons dynamically ----------
+  function buildButtons() {
+    const panel = document.getElementById("buttonPanel");
+    panel.innerHTML = "";
+    categories.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.className = "cat-btn";
+      btn.innerText = cat.name;
+      // add click event that calls the random joke generator
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        onCategoryClick(cat);
+      });
+      panel.appendChild(btn);
+    });
+  }
+
+  // ---------- attach back button listener ----------
+  function initBackButton() {
+    const backBtn = document.getElementById("backBtn");
+    backBtn.addEventListener("click", resetToMenu);
+  }
+
+  // ---------- initial page load ----------
+  function init() {
+    buildButtons();
+    initBackButton();
+    // ensure starting state: menu visible, joke hidden, back hidden, buttons visible
+    document.getElementById("jokeDisplay").style.display = "none";
+    document.getElementById("backButtonWrapper").style.display = "none";
+    document.getElementById("buttonPanel").style.display = "flex";
+  }
+
+  init();
+</script>
+</body>
+</html>
